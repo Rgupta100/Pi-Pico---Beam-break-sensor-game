@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pico Beam Break Tracker</title>
+</head>
+<body onclick="connect()" style="height:100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
+    
+    <div id="status" style="margin-bottom: 20px; color: gray;">Click anywhere to connect to Pico</div>
+    <div id="out" style="font-size: 5rem; font-weight: bold;">0</div>
+    <div style="font-size: 1.5rem;">Cups Broken</div>
+
+    <script>
+        let brokenCount = 0;
+
+        async function connect() {
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                
+                document.getElementById('status').innerText = "Connected to Pico";
+                document.getElementById('status').style.color = "green";
+
+                const reader = port.readable
+                    .pipeThrough(new TextDecoderStream())
+                    .getReader();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    if (value) {
+                        // Your Pico sends "1\n". We check if the incoming string contains "1"
+                        if (value.includes("1")) {
+                            brokenCount++;
+                            document.getElementById('out').innerText = brokenCount;
+                        }
+                    }
+                }
+            } catch (error) {
+                document.getElementById('status').innerText = "Error: " + error.message;
+                document.getElementById('status').style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
